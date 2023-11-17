@@ -59,6 +59,27 @@ public:
 
 };
 
+class Passenger {
+    string name;
+    vector<Ticket> tickets;
+
+public:
+    Passenger(const string& name): name(name){}
+
+    void addTicket(const Ticket& ticket) {
+        this->tickets.push_back(ticket);
+    }
+
+    string getName() const {
+        return this->name;
+    }
+
+    vector<Ticket> getTickets() const {
+        return this->tickets;
+    }
+
+};
+
 class Airplane{
 private:
     string date;
@@ -74,7 +95,7 @@ public:
     }
 
     void addTicket(const Ticket& newTicket) {
-        tickets.push_back(newTicket);
+        this->tickets.push_back(newTicket);
     }
 
     string getDate() const {
@@ -95,12 +116,25 @@ public:
         return availableTickets;
     }
 
-    void bookSeat(const string& passengerName, const string& seatNumber, int id, vector<Ticket>* bookedTickets) {
-        for (auto & ticket : tickets) {
+    void bookSeat(const string& passengerName, const string& seatNumber, int id, vector<Ticket>* bookedTickets, vector<Passenger>* passengers) {
+        for (auto & ticket : this->tickets) {
             if (ticket.getSeatNumber() == seatNumber && ticket.getBookingStatus()) {
                 ticket.setPassengerName(passengerName);
                 ticket.setId(id);
                 bookedTickets->push_back(ticket);
+                bool passengerFound = false;
+                for (auto & passenger : *passengers) {
+                    if (passenger.getName() == passengerName) {
+                        passenger.addTicket(ticket);
+                        passengerFound = true;
+                        break;
+                    }
+                }
+                if (!passengerFound) {
+                    Passenger newPassenger(passengerName);
+                    newPassenger.addTicket(ticket);
+                    passengers->push_back(newPassenger);
+                }
                 cout << "Confirmed with ID " << id << endl;
                 return;
             }
@@ -158,6 +192,7 @@ int main() {
     ConfigReader reader;
     vector<Airplane> airplanes = reader.readConfiguration("C:\\Users\\svobo\\OneDrive\\Desktop\\Yarrochka\\OOPD\\one\\first\\data.txt");
     vector<Ticket> bookedTickets;
+    vector<Passenger> passengers;
     int id = 123;
     int idCheck;
 
@@ -197,7 +232,7 @@ int main() {
             bool isBooked = false;
             for (auto &airplane : airplanes) {
                 if (airplane.getDate() == date && airplane.getFlightNumber() == flightNumber) {
-                    airplane.bookSeat(passengerName, seatNumber, id, &bookedTickets);
+                    airplane.bookSeat(passengerName, seatNumber, id, &bookedTickets, &passengers);
                     id++;
                     isBooked = true;
                     break;
@@ -240,6 +275,24 @@ int main() {
         } else if (command == "all") {
             cout << "Enter passenger name: " << endl;
             cin >> passengerName;
+
+            bool passengerFound = false;
+            for (const auto& passenger : passengers) {
+                if (passenger.getName() == passengerName) {
+                    passengerFound = true;
+                    const auto& tickets = passenger.getTickets();
+                    cout << "Tickets for " << passengerName << ":" << endl;
+                    for (size_t i = 0; i < tickets.size(); ++i) {
+                        const auto& ticket = tickets[i];
+                        cout << i + 1 << ". Flight " << ticket.getFlightNumber() << ", " << ticket.getDate()
+                             << ", seat " << ticket.getSeatNumber() << ", price " << ticket.getPrice() << "$" << endl;
+                    }
+                    break;
+                }
+            }
+            if (!passengerFound) {
+                cout << "No tickets found for passenger: " << passengerName << endl;
+            }
 
         } else if (command == "exit") {
             break;
