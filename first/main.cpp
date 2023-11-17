@@ -188,114 +188,133 @@ public:
     }
 };
 
-int main() {
-    ConfigReader reader;
-    vector<Airplane> airplanes = reader.readConfiguration("C:\\Users\\svobo\\OneDrive\\Desktop\\Yarrochka\\OOPD\\one\\first\\data.txt");
-    vector<Ticket> bookedTickets;
+class FlightBookingSystem {
+private:
+    vector<Airplane> airplanes;
     vector<Passenger> passengers;
-    int id = 123;
-    int idCheck;
+    vector<Ticket> bookedTickets;
+    int nextId = 123;
 
-    string command, passengerName, seatNumber, flightNumber, date;
+    void loadAirplanes(const string& filePath) {
+        ConfigReader reader;
+        airplanes = reader.readConfiguration(filePath);
+    }
+
+public:
+    FlightBookingSystem(const string& configFilePath) {
+        loadAirplanes(configFilePath);
+    }
+
+    void check() {
+        string date, flightNumber;
+        cout << "Enter date and flight number (example: 11.12.2022 FQ12): ";
+        cin >> date >> flightNumber;
+
+        for (const auto& airplane : airplanes) {
+            if (airplane.getDate() == date && airplane.getFlightNumber() == flightNumber) {
+                auto availableTickets = airplane.checkSeatAvailability();
+                if (availableTickets.empty()) {
+                    cout << "No available seats." << endl;
+                } else {
+                    cout << "Available seats:" << endl;
+                    for (const auto& ticket : availableTickets) {
+                        cout << "Seat: " << ticket.getSeatNumber() << ", Price: $" << ticket.getPrice() << endl;
+                    }
+                }
+                return;
+            }
+        }
+        cout << "Flight not found." << endl;
+    }
+
+    void book() {
+        string passengerName, date, flightNumber, seatNumber;
+        cout << "Enter passenger name, date, flight number, and seat number (example: John 11.12.2022 FQ12 1A): " << endl;
+        cin >> passengerName >> date >> flightNumber >> seatNumber;
+
+        for (auto &airplane : airplanes) {
+            if (airplane.getDate() == date && airplane.getFlightNumber() == flightNumber) {
+                airplane.bookSeat(passengerName, seatNumber, nextId, &bookedTickets, &passengers);
+                nextId++;
+                return;
+            }
+        }
+        cout << "Flight not found or seat number is incorrect." << endl;
+    }
+
+    void commandReturn() {
+        int idCheck;
+        cout << "Enter confirmation ID: " << endl;
+        cin >> idCheck;
+
+        for (const auto& ticket : bookedTickets) {
+            if (ticket.getId() == idCheck) {
+                cout << "Confirmed " << ticket.getPrice() << "$" << " refund for " << ticket.getPassengerName() << endl;
+                return;
+            }
+        }
+        cout << "Ticket with the given ID not found." << endl;
+    }
+
+    void view() {
+        int idCheck;
+        cout << "Enter confirmation ID: ";
+        cin >> idCheck;
+
+        for (const auto& ticket : bookedTickets) {
+            if (ticket.getId() == idCheck) {
+                cout << "Ticket details: Flight " << ticket.getFlightNumber()
+                     << ", Date: " << ticket.getDate() << ", Seat: " << ticket.getSeatNumber()
+                     << ", Price: $" << ticket.getPrice() << endl;
+                return;
+            }
+        }
+        cout << "Ticket with given ID not found." << endl;
+    }
+
+    void all() {
+        string passengerName;
+        cout << "Enter passenger name: ";
+        cin >> passengerName;
+
+        for (const auto& passenger : passengers) {
+            if (passenger.getName() == passengerName) {
+                const auto& tickets = passenger.getTickets();
+                cout << "Tickets for " << passengerName << ":" << endl;
+                for (const auto& ticket : tickets) {
+                    cout << "Flight " << ticket.getFlightNumber() << ", Date: " << ticket.getDate()
+                         << ", Seat: " << ticket.getSeatNumber() << ", Price: $" << ticket.getPrice() << endl;
+                }
+                return;
+            }
+        }
+        cout << "No tickets found for passenger: " << passengerName << endl;
+    }
+
+};
+
+int main() {
+    FlightBookingSystem system("C:\\Users\\svobo\\OneDrive\\Desktop\\Yarrochka\\OOPD\\one\\first\\data.txt");
+
+    string command;
     while (true) {
-        cout << "Enter command (check, book, return, view, all, exit): " << endl;
+        cout << "Enter command (check, book, return, view, all, exit): ";
         cin >> command;
 
         if (command == "check") {
-            cout << "Enter date and flight number (example: 11.12.2022 FQ12): " << endl;
-            cin >> date >> flightNumber;
-
-            bool flightFound = false;
-            for (const auto& airplane : airplanes) {
-                if (airplane.getDate() == date && airplane.getFlightNumber() == flightNumber) {
-                    flightFound = true;
-                    vector<Ticket> availableTickets = airplane.checkSeatAvailability();
-                    if (availableTickets.empty()) {
-                        cout << "No seats available." << endl;
-                    } else {
-                        cout << "Available seats for flight " << flightNumber << " on " << date << ":" << endl;
-                        for (const auto& ticket : availableTickets) {
-                            cout << "Seat: " << ticket.getSeatNumber() << ", Price: $" << ticket.getPrice() << endl;
-                        }
-                    }
-                    break;
-                }
-            }
-            if (!flightFound) {
-                cout << "Flight not found." << endl;
-            }
-
+            system.check();
         } else if (command == "book") {
-            cout << "Enter passenger name, date, flight number, and seat number (example: John 11.12.2022 FQ12 1A): " << endl;
-            cin >> passengerName >> date >> flightNumber >> seatNumber;
-
-            bool isBooked = false;
-            for (auto &airplane : airplanes) {
-                if (airplane.getDate() == date && airplane.getFlightNumber() == flightNumber) {
-                    airplane.bookSeat(passengerName, seatNumber, id, &bookedTickets, &passengers);
-                    id++;
-                    isBooked = true;
-                    break;
-                }
-            }
-            if (!isBooked) {
-                cout << "Flight not found or seat number is incorrect." << endl;
-            }
-
+            system.book();
         } else if (command == "return") {
-            cout << "Enter confirmation ID: " << endl;
-            cin >> idCheck;
-
-            bool ticketFound = false;
-            for (const auto& ticket : bookedTickets) {
-                if (ticket.getId() == idCheck) {
-                    cout << "Confirmed " << ticket.getPrice() << "$" << " refund for " << ticket.getPassengerName() << endl;
-                    ticketFound = true;
-                    break;
-                }
-            }
-            if (!ticketFound) {
-                cout << "Ticket with the given ID not found." << endl;
-            }
+            system.commandReturn();
         } else if (command == "view") {
-            cout << "Enter confirmation ID: " << endl;
-            cin >> idCheck;
-
-            bool ticketFound = false;
-            for (const auto& ticket : bookedTickets) {
-                if (ticket.getId() == idCheck) {
-                    cout << "Flight " << ticket.getFlightNumber() << ", " << ticket.getDate() << ", seat " << ticket.getSeatNumber() << ", price " << ticket.getPrice() << "$, " << ticket.getPassengerName() << endl;
-                    ticketFound = true;
-                    break;
-                }
-            }
-            if (!ticketFound) {
-                cout << "Ticket with the given ID not found." << endl;
-            }
+            system.view();
         } else if (command == "all") {
-            cout << "Enter passenger name: " << endl;
-            cin >> passengerName;
-
-            bool passengerFound = false;
-            for (const auto& passenger : passengers) {
-                if (passenger.getName() == passengerName) {
-                    passengerFound = true;
-                    const auto& tickets = passenger.getTickets();
-                    cout << "Tickets for " << passengerName << ":" << endl;
-                    for (size_t i = 0; i < tickets.size(); ++i) {
-                        const auto& ticket = tickets[i];
-                        cout << i + 1 << ". Flight " << ticket.getFlightNumber() << ", " << ticket.getDate()
-                             << ", seat " << ticket.getSeatNumber() << ", price " << ticket.getPrice() << "$" << endl;
-                    }
-                    break;
-                }
-            }
-            if (!passengerFound) {
-                cout << "No tickets found for passenger: " << passengerName << endl;
-            }
-
+            system.all();
         } else if (command == "exit") {
             break;
+        } else {
+            cout << "Invalid command." << endl;
         }
     }
 
