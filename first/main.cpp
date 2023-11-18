@@ -15,7 +15,7 @@ private:
     float price;
 
 public:
-    Ticket(const string& passengerName, string date, string seatNumber, const string& flightNumber, float price)
+    Ticket(const string& passengerName, const string& date, const string& seatNumber, const string& flightNumber, const float& price)
             : passengerName(passengerName), date(date), seatNumber(seatNumber), flightNumber(flightNumber),
             price(price), bookingStatus(true) {}
 
@@ -91,9 +91,9 @@ private:
     vector<Ticket> tickets;
 
 public:
-    Airplane(const string& flightNumber, string date): flightNumber(flightNumber), date(date) {}
+    Airplane(const string& flightNumber, string& date): flightNumber(flightNumber), date(date) {}
 
-    void setTotalSize(int total) {
+    void setTotalSize(const int& total) {
         this->totalSize = total;
     }
 
@@ -123,7 +123,7 @@ public:
         return availableTickets;
     }
 
-    void bookSeat(const string& passengerName, const string& seatNumber, int id, vector<Ticket>* bookedTickets, vector<Passenger>* passengers) {
+    void bookSeat(const string& passengerName, const string& seatNumber, int& id, vector<Ticket>* bookedTickets, vector<Passenger>* passengers) {
         for (auto & ticket : this->tickets) {
             if (ticket.getSeatNumber() == seatNumber && ticket.getBookingStatus()) {
                 ticket.setPassengerName(passengerName);
@@ -140,7 +140,7 @@ public:
                 if (!passengerFound) {
                     Passenger newPassenger(passengerName);
                     newPassenger.addTicket(ticket);
-                    passengers->push_back(newPassenger);
+                    passengers->push_back(move(newPassenger));
                 }
                 cout << "Confirmed with ID " << id << endl;
                 return;
@@ -149,7 +149,7 @@ public:
         cout << "Seat not available or already booked." << endl;
     }
 
-    void returnTicket(int ticketId) {
+    void returnTicket(const int ticketId) {
         for (auto& ticket : tickets) {
             if (ticket.getId() == ticketId) {
                 ticket.resetBooking();
@@ -196,7 +196,7 @@ public:
                 }
             }
             airplane.setTotalSize(seatsPerRow * endRow);
-            airplanes.push_back(airplane);
+            airplanes.push_back(move(airplane));
         }
 
         return airplanes;
@@ -212,7 +212,7 @@ private:
 
     void loadAirplanes(const string& filePath) {
         ConfigReader reader;
-        airplanes = reader.readConfiguration(filePath);
+        airplanes = move(reader.readConfiguration(filePath)); //////////////////////////////////////////////////////////////////////////////////////////////////////
     }
 
 public:
@@ -225,14 +225,14 @@ public:
         cout << "Enter date and flight number (example: 11.12.2022 FQ12): ";
         cin >> date >> flightNumber;
 
-        for (const auto& airplane : airplanes) {
+        for (auto& airplane : airplanes) {
             if (airplane.getDate() == date && airplane.getFlightNumber() == flightNumber) {
                 auto availableTickets = airplane.checkSeatAvailability();
                 if (availableTickets.empty()) {
                     cout << "No available seats." << endl;
                 } else {
                     cout << "Available seats:" << endl;
-                    for (const auto& ticket : availableTickets) {
+                    for (auto& ticket : availableTickets) {
                         cout << "Seat: " << ticket.getSeatNumber() << ", Price: $" << ticket.getPrice() << endl;
                     }
                 }
@@ -253,6 +253,10 @@ public:
                 nextId++;
                 return;
             }
+        }
+
+        {
+
         }
         cout << "Flight not found or seat number is incorrect." << endl;
     }
@@ -291,7 +295,7 @@ public:
         }
     }
 
-    void removeTicketFromBookedTickets(int ticketId) {
+    void removeTicketFromBookedTickets(int& ticketId) {
         for (auto it = bookedTickets.begin(); it != bookedTickets.end(); ++it) {
             if (it->getId() == ticketId) {
                 bookedTickets.erase(it);
@@ -307,9 +311,8 @@ public:
 
         for (const auto& ticket : bookedTickets) {
             if (ticket.getId() == idCheck) {
-                cout << "Ticket details: Flight " << ticket.getFlightNumber()
-                     << ", Date: " << ticket.getDate() << ", Seat: " << ticket.getSeatNumber()
-                     << ", Price: $" << ticket.getPrice() << endl;
+                cout << "Ticket details: Flight " << ticket.getFlightNumber() << ", Date: " << ticket.getDate()
+                << ", Seat: " << ticket.getSeatNumber() << ", Price: $" << ticket.getPrice() << endl;
                 return;
             }
         }
