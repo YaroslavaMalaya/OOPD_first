@@ -2,7 +2,6 @@
 #include <vector>
 #include <fstream>
 #include <sstream>
-#include <map>
 using namespace std;
 
 class Ticket {
@@ -57,6 +56,10 @@ public:
         this->id = id;
     }
 
+    void resetBooking() {
+        this->passengerName = "-";
+        this->bookingStatus = true;
+    }
 };
 
 class Passenger {
@@ -74,7 +77,7 @@ public:
         return this->name;
     }
 
-    vector<Ticket> getTickets() const {
+    vector<Ticket>& getTickets() {
         return this->tickets;
     }
 
@@ -104,6 +107,10 @@ public:
 
     string getFlightNumber() const {
         return this->flightNumber;
+    }
+
+    vector<Ticket> getTickets() const {
+        return this->tickets;
     }
 
     vector<Ticket> checkSeatAvailability() const {
@@ -142,6 +149,14 @@ public:
         cout << "Seat not available or already booked." << endl;
     }
 
+    void returnTicket(int ticketId) {
+        for (auto& ticket : tickets) {
+            if (ticket.getId() == ticketId) {
+                ticket.resetBooking();
+                return;
+            }
+        }
+    }
 };
 
 class ConfigReader {
@@ -247,13 +262,42 @@ public:
         cout << "Enter confirmation ID: " << endl;
         cin >> idCheck;
 
-        for (const auto& ticket : bookedTickets) {
-            if (ticket.getId() == idCheck) {
-                cout << "Confirmed " << ticket.getPrice() << "$" << " refund for " << ticket.getPassengerName() << endl;
-                return;
+        for (auto& airplane : airplanes) {
+            for (auto& ticket : airplane.getTickets()) {
+                if (ticket.getId() == idCheck && !ticket.getBookingStatus()) {
+                    airplane.returnTicket(idCheck);
+                    removeTicketFromPassenger(ticket);
+                    removeTicketFromBookedTickets(idCheck);
+                    cout << "Confirmed " << ticket.getPrice() << "$" << " refund for " << ticket.getPassengerName() << endl;
+                    return;
+                }
             }
         }
         cout << "Ticket with the given ID not found." << endl;
+    }
+
+    void removeTicketFromPassenger(const Ticket& ticket) {
+        for (auto& passenger : passengers) {
+            if (passenger.getName() == ticket.getPassengerName()) {
+                vector<Ticket>& passengerTickets = passenger.getTickets();
+                for (auto it = passengerTickets.begin(); it != passengerTickets.end(); ++it) {
+                    if (it->getId() == ticket.getId()) {
+                        passengerTickets.erase(it);
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+    }
+
+    void removeTicketFromBookedTickets(int ticketId) {
+        for (auto it = bookedTickets.begin(); it != bookedTickets.end(); ++it) {
+            if (it->getId() == ticketId) {
+                bookedTickets.erase(it);
+                return;
+            }
+        }
     }
 
     void view() {
@@ -277,11 +321,11 @@ public:
         cout << "Enter passenger name: ";
         cin >> passengerName;
 
-        for (const auto& passenger : passengers) {
+        for (auto& passenger : passengers) {
             if (passenger.getName() == passengerName) {
-                const auto& tickets = passenger.getTickets();
+                vector<Ticket>& tickets = passenger.getTickets();
                 cout << "Tickets for " << passengerName << ":" << endl;
-                for (const auto& ticket : tickets) {
+                for (auto& ticket : tickets) {
                     cout << "Flight " << ticket.getFlightNumber() << ", Date: " << ticket.getDate()
                          << ", Seat: " << ticket.getSeatNumber() << ", Price: $" << ticket.getPrice() << endl;
                 }
@@ -294,7 +338,8 @@ public:
 };
 
 int main() {
-    FlightBookingSystem system("C:\\Users\\svobo\\OneDrive\\Desktop\\Yarrochka\\OOPD\\one\\first\\data.txt");
+    // FlightBookingSystem system("C:\\Users\\svobo\\OneDrive\\Desktop\\Yarrochka\\OOPD\\one\\first\\data.txt");
+    FlightBookingSystem system("/Users/Yarrochka/Mine/Study/OOPD/first/data.txt");
 
     string command;
     while (true) {
